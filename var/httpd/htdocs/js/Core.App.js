@@ -1,5 +1,5 @@
 // --
-// Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+// Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 // --
 // This software comes with ABSOLUTELY NO WARRANTY. For details, see
 // the enclosed file COPYING for license information (AGPL). If you
@@ -85,7 +85,8 @@ Core.App = (function (TargetNS) {
      *      Unbinds a crossbrowser compatible unload event to the window object
      */
     TargetNS.UnbindWindowUnloadEvent = function (Namespace) {
-        $(window).off('unload.' + Namespace + ', pagehide.' + Namespace);
+        $(window).off('unload.' + Namespace);
+        $(window).off('pagehide.' + Namespace);
     };
 
     /**
@@ -220,10 +221,12 @@ Core.App = (function (TargetNS) {
      * @description
      *      Escapes the special characters (. :) in the given jQuery Selector
      *      jQ does not allow the usage of dot or colon in ID or class names
+     *      An overview of special characters that should be quoted can be found here:
+     *      https://api.jquery.com/category/selectors/
      */
     TargetNS.EscapeSelector = function (Selector) {
         if (Selector && Selector.length) {
-            return Selector.replace(/(#|:|\.|\[|\])/g, '\\$1');
+            return Selector.replace(/(#|:|\.|\[|\]|@|!|"|\$|%|&|<|=|>|'|\(|\)|\*|\+|,|\?|\/|\;|\\|\^|{|}|`|\||~)/g, '\\$1');
         }
         return '';
     };

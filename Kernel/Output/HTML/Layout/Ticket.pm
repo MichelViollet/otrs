@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -12,6 +12,7 @@ use strict;
 use warnings;
 
 use Kernel::System::VariableCheck qw(:all);
+use Kernel::Language qw(Translatable);
 
 our $ObjectManagerDisabled = 1;
 
@@ -62,7 +63,7 @@ sub AgentCustomerViewTable {
     }
 
     my $ShownType = 1;
-    if ( $Param{Type} && $Param{Type} eq 'Lite' ) {
+    if ( $Param{Type} && $Param{Type} eq Translatable('Lite') ) {
         $ShownType = 2;
 
         # check if min one lite view item is configured, if not, use
@@ -315,7 +316,7 @@ sub AgentQueueListOption {
     # add suffix for correct sorting
     my $KeyNoQueue;
     my $ValueNoQueue;
-    my $MoveStr = $Self->{LanguageObject}->Get('Move');
+    my $MoveStr = $Self->{LanguageObject}->Translate('Move');
     my $ValueOfQueueNoKey .= "- " . $MoveStr . " -";
     DATA:
     for ( sort { $Data{$a} cmp $Data{$b} } keys %Data ) {
@@ -1074,7 +1075,7 @@ sub TicketListShow {
                         ColumnsEnabled   => $JSONObject->Encode( Data => \@ColumnsEnabled ),
                         ColumnsAvailable => $JSONObject->Encode( Data => \@ColumnsAvailable ),
                         NamePref         => $PrefKeyColumns,
-                        Desc             => 'Shown Columns',
+                        Desc             => Translatable('Shown Columns'),
                         Name             => $Env->{Action},
                         View             => $View,
                         GroupName        => 'TicketOverviewFilterSettings',
@@ -1205,7 +1206,7 @@ sub TicketMetaItems {
             $Image = 'meta-new.png';
             push @Result, {
                 Image      => $Image,
-                Title      => 'Unread article(s) available',
+                Title      => Translatable('Unread article(s) available'),
                 Class      => 'UnreadArticles',
                 ClassSpan  => 'UnreadArticles Remarkable',
                 ClassTable => 'UnreadArticles',
@@ -1214,7 +1215,7 @@ sub TicketMetaItems {
         else {
             push @Result, {
                 Image      => $Image,
-                Title      => 'Unread article(s) available',
+                Title      => Translatable('Unread article(s) available'),
                 Class      => 'UnreadArticles',
                 ClassSpan  => 'UnreadArticles Ordinary',
                 ClassTable => 'UnreadArticles',

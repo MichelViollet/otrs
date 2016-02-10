@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -14,6 +14,7 @@ use warnings;
 use base qw(Kernel::System::Console::BaseCommand);
 
 use File::Basename;
+use File::Copy;
 use Lingua::Translit;
 use Pod::Strip;
 use Storable ();
@@ -185,17 +186,6 @@ sub HandleLanguage {
         return;
     }
 
-    if ($IsSubTranslation) {
-        $Self->Print(
-            "Processing language <yellow>$Language</yellow> template files from <yellow>$Module</yellow>, writing output to <yellow>$TargetFile</yellow>\n"
-        );
-    }
-    else {
-        $Self->Print(
-            "Processing language <yellow>$Language</yellow> template files, writing output to <yellow>$TargetFile</yellow>\n"
-        );
-    }
-
     if ( !@OriginalTranslationStrings ) {
 
         $Self->Print(
@@ -211,6 +201,7 @@ sub HandleLanguage {
         my @TemplateList = $Kernel::OM->Get('Kernel::System::Main')->DirectoryRead(
             Directory => $Directory,
             Filter    => '*.tt',
+            Recursive => 1,
         );
 
         for my $File (@TemplateList) {
@@ -379,8 +370,17 @@ sub HandleLanguage {
                 Source   => $String,
             };
         }
+    }
 
-        return 1;
+    if ($IsSubTranslation) {
+        $Self->Print(
+            "Processing language <yellow>$Language</yellow> template files from <yellow>$Module</yellow>, writing output to <yellow>$TargetFile</yellow>\n"
+        );
+    }
+    else {
+        $Self->Print(
+            "Processing language <yellow>$Language</yellow> template files, writing output to <yellow>$TargetFile</yellow>\n"
+        );
     }
 
     # Language file, which only contains the OTRS core translations
@@ -676,7 +676,7 @@ sub WritePerlLanguageFile {
 
         $NewOut = <<"EOF";
 $Separator
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 $Separator
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you

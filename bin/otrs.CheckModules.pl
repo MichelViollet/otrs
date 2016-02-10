@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU AFFERO General Public License as published by
@@ -111,7 +111,7 @@ GetOptions(
 # check needed params
 if ($Help) {
     print "otrs.CheckModules.pl - OTRS CheckModules\n";
-    print "Copyright (C) 2001-2015 OTRS AG, http://otrs.com/\n";
+    print "Copyright (C) 2001-2016 OTRS AG, http://otrs.com/\n";
     print "usage: otrs.CheckModules.pl [-list|all] \n";
     print "
    otrs.CheckModules.pl
@@ -523,8 +523,9 @@ sub _Check {
         #   Don't do this for Net::DNS as it seems to take very long (>20s) in a
         #   mod_perl environment sometimes.
         my %DontRequire = (
-            'Net::DNS'     => 1,
-            'Email::Valid' => 1,    # uses Net::DNS internally
+            'Net::DNS'        => 1,
+            'Email::Valid'    => 1,    # uses Net::DNS internally
+            'Apache2::Reload' => 1,    # is not needed / working on systems without mod_perl (like Plack etc.)
         );
 
         ## no critic

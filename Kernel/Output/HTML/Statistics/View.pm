@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -1221,15 +1221,19 @@ sub StatsParamsGet {
                     # set the first value for a single select field, if no selected value is given
                     if (
                         $Element->{Block} eq 'SelectField'
-                        && ( !IsArrayRefWithData( $Element->{SelectedValues} )
-                            || scalar @{ $Element->{SelectedValues} } > 1 )
+                        && (
+                            !IsArrayRefWithData( $Element->{SelectedValues} )
+                            || scalar @{ $Element->{SelectedValues} } > 1
+                        )
                         )
                     {
 
                         my @Values = sort keys %{ $Element->{Values} };
 
-                        if ( IsArrayRefWithData( $Element->{SelectedValues} )
-                            && scalar @{ $Element->{SelectedValues} } > 1 )
+                        if (
+                            IsArrayRefWithData( $Element->{SelectedValues} )
+                            && scalar @{ $Element->{SelectedValues} } > 1
+                            )
                         {
                             @Values = @{ $Element->{SelectedValues} };
                         }
@@ -1969,6 +1973,7 @@ sub _TimeOutput {
                 ID         => $ElementID . '-TimeScaleCount',
                 SelectedID => $Param{TimeScaleCount},
                 Sort       => 'NumericKey',
+                Class      => 'Modernize',
             );
         }
 
@@ -1987,6 +1992,7 @@ sub _TimeOutput {
                     ID         => $ElementID . '-' . $TimeCountName,
                     SelectedID => $Param{$TimeCountName},
                     Sort       => 'NumericKey',
+                    Class      => 'Modernize',
                 );
             }
 
@@ -1996,6 +2002,7 @@ sub _TimeOutput {
                 ID         => $ElementID . '-TimeRelativeUnit',
                 Class      => 'TimeRelativeUnit' . $Param{Output},
                 SelectedID => $Param{TimeRelativeUnitLocalSelectedValue} // $Param{TimeRelativeUnit} // 'Day',
+                Class      => 'Modernize',
             );
         }
 
@@ -2022,7 +2029,7 @@ sub _TimeOutput {
             %TimeScaleBuildSelection,
             Name       => $Element,
             ID         => $ElementID,
-            Class      => 'TimeScale' . $Param{Output},
+            Class      => 'Modernize TimeScale' . $Param{Output},
             SelectedID => $Param{TimeScaleUnitLocalSelectedValue} // $Param{SelectedValues}[0] // 'Day',
         );
         $TimeOutput{TimeScaleElementID} = $ElementID;
@@ -2036,15 +2043,15 @@ sub _TimeScaleBuildSelection {
 
     my %TimeScaleBuildSelection = (
         Data => {
-            Second   => 'second(s)',
-            Minute   => 'minute(s)',
-            Hour     => 'hour(s)',
-            Day      => 'day(s)',
-            Week     => 'week(s)',
-            Month    => 'month(s)',
-            Quarter  => 'quarter(s)',
-            HalfYear => 'half-year(s)',
-            Year     => 'year(s)',
+            Second   => Translatable('second(s)'),
+            Minute   => Translatable('minute(s)'),
+            Hour     => Translatable('hour(s)'),
+            Day      => Translatable('day(s)'),
+            Week     => Translatable('week(s)'),
+            Month    => Translatable('month(s)'),
+            Quarter  => Translatable('quarter(s)'),
+            HalfYear => Translatable('half-year(s)'),
+            Year     => Translatable('year(s)'),
         },
         Sort           => 'IndividualKey',
         SortIndividual => [ 'Second', 'Minute', 'Hour', 'Day', 'Week', 'Month', 'Quarter', 'HalfYear', 'Year' ],
@@ -2084,39 +2091,39 @@ sub _TimeScale {
     my %TimeScale = (
         'Second' => {
             Position => 1,
-            Value    => 'second(s)',
+            Value    => Translatable('second(s)'),
         },
         'Minute' => {
             Position => 2,
-            Value    => 'minute(s)',
+            Value    => Translatable('minute(s)'),
         },
         'Hour' => {
             Position => 3,
-            Value    => 'hour(s)',
+            Value    => Translatable('hour(s)'),
         },
         'Day' => {
             Position => 4,
-            Value    => 'day(s)',
+            Value    => Translatable('day(s)'),
         },
         'Week' => {
             Position => 5,
-            Value    => 'week(s)',
+            Value    => Translatable('week(s)'),
         },
         'Month' => {
             Position => 6,
-            Value    => 'month(s)',
+            Value    => Translatable('month(s)'),
         },
         'Quarter' => {
             Position => 7,
-            Value    => 'quarter(s)',
+            Value    => Translatable('quarter(s)'),
         },
         'HalfYear' => {
             Position => 8,
-            Value    => 'half-year(s)',
+            Value    => Translatable('half-year(s)'),
         },
         'Year' => {
             Position => 9,
-            Value    => 'year(s)',
+            Value    => Translatable('year(s)'),
         },
     );
 

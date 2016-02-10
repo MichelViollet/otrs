@@ -1,5 +1,5 @@
 // --
-// Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+// Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 // --
 // This software comes with ABSOLUTELY NO WARRANTY. For details, see
 // the enclosed file COPYING for license information (AGPL). If you
@@ -31,14 +31,14 @@ Core.Agent.Statistics = (function (TargetNS) {
      */
     TargetNS.InitAddScreen = function () {
 
-        $('.BigButtons li a').bind('click', function () {
+        $('.BigButtons a').bind('click', function () {
             var $Link = $(this);
 
             if ($Link.hasClass('Disabled')) {
                 return false;
             }
 
-            $('.BigButtons li a').removeClass('Active');
+            $('.BigButtons a').removeClass('Active');
             $Link.addClass('Active');
 
             $('#GeneralSpecifications').fadeIn(function() {
@@ -67,7 +67,7 @@ Core.Agent.Statistics = (function (TargetNS) {
         var $ContainerElement = $('#' + ConfigurationType + 'Container'),
             $FormFieldsElement = $('#' + ConfigurationType + 'FormFields');
 
-        $ContainerElement.find('.Element' + ElementName).clone().appendTo($FormFieldsElement);
+        $ContainerElement.find('.Element' + Core.App.EscapeSelector(ElementName)).clone().appendTo($FormFieldsElement);
     };
 
     function InitEditDialog() {
@@ -84,7 +84,7 @@ Core.Agent.Statistics = (function (TargetNS) {
                     var $Element = $(this),
                         ElementName = $Element.data('element');
 
-                    if ($('#EditDialog .Fields .Element' + ElementName).length) {
+                    if ($('#EditDialog .Fields .Element' + Core.App.EscapeSelector(ElementName)).length) {
                         return;
                     }
 
@@ -95,7 +95,7 @@ Core.Agent.Statistics = (function (TargetNS) {
             }
 
             function EditDialogAdd(ElementName) {
-                var $Element = $ContainerElement.find('.Element' + ElementName);
+                var $Element = $ContainerElement.find('.Element' + Core.App.EscapeSelector(ElementName));
                 $Element.clone().appendTo($('#EditDialog .Fields'));
                 if (ConfigurationLimit && $('#EditDialog .Fields .Element').length >= ConfigurationLimit) {
                     $('#EditDialog .Add').hide();
@@ -105,7 +105,7 @@ Core.Agent.Statistics = (function (TargetNS) {
             }
 
             function EditDialogDelete(ElementName) {
-                $('#EditDialog .Fields .Element' + ElementName).remove();
+                $('#EditDialog .Fields .Element' + Core.App.EscapeSelector(ElementName)).remove();
                 $('#EditDialog .Add').show();
                 RebuildEditDialogAddSelection();
             }

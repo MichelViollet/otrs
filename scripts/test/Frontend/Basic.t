@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -35,14 +35,16 @@ my $TestCustomerUserLogin = $HelperObject->TestCustomerUserCreate();
 
 my $BaseURL = $ConfigObject->Get('HttpType') . '://';
 
-$BaseURL .= 'localhost/';
+$BaseURL .= $HelperObject->GetTestHTTPHostname() . '/';
 $BaseURL .= $ConfigObject->Get('ScriptAlias');
 
 my $AgentBaseURL    = $BaseURL . 'index.pl?';
 my $CustomerBaseURL = $BaseURL . 'customer.pl?';
 my $PublicBaseURL   = $BaseURL . 'public.pl?';
 
-my $UserAgent = LWP::UserAgent->new();
+my $UserAgent = LWP::UserAgent->new(
+    Timeout => 60,
+);
 $UserAgent->cookie_jar( {} );    # keep cookies
 
 my $Response = $UserAgent->get(
@@ -100,17 +102,6 @@ my %Frontends = (
     $CustomerBaseURL => $ConfigObject->Get('CustomerFrontend::Module'),
     $PublicBaseURL   => $ConfigObject->Get('PublicFrontend::Module'),
 );
-
-# test plack server if present
-if ( $ConfigObject->Get('UnitTestPlackServerPort') ) {
-    my $PlackBaseURL = 'http://localhost:' . $ConfigObject->Get('UnitTestPlackServerPort') . '/';
-    %Frontends = (
-        %Frontends,
-        $PlackBaseURL . 'index.pl?'    => $ConfigObject->Get('Frontend::Module'),
-        $PlackBaseURL . 'customer.pl?' => $ConfigObject->Get('CustomerFrontend::Module'),
-        $PlackBaseURL . 'public.pl?'   => $ConfigObject->Get('PublicFrontend::Module'),
-    );
-}
 
 for my $BaseURL ( sort keys %Frontends ) {
     FRONTEND:

@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -176,7 +176,10 @@ creates a new ticket number
 
 =item TicketCheckNumber()
 
-checks if ticket number exists, returns ticket id if number exists
+checks if ticket number exists, returns ticket id if number exists.
+
+returns the merged ticket id if ticket was merged.
+only into a depth of maximum 10 merges
 
     my $TicketID = $TicketObject->TicketCheckNumber(
         Tn => '200404051004575',
@@ -214,28 +217,39 @@ sub TicketCheckNumber {
     # get main ticket id if ticket has been merged
     return if !$TicketID;
 
-    my %Ticket = $Self->TicketGet(
-        TicketID      => $TicketID,
-        DynamicFields => 0,
-    );
+    # do not check deeper than 10 merges
+    my $Limit = 10;
+    my $Count = 1;
+    MERGELOOP:
+    for ( 1 .. $Limit ) {
+        my %Ticket = $Self->TicketGet(
+            TicketID      => $TicketID,
+            DynamicFields => 0,
+        );
 
-    return $TicketID if $Ticket{StateType} ne 'merged';
+        return $TicketID if $Ticket{StateType} ne 'merged';
 
-    # get ticket history
-    my @Lines = $Self->HistoryGet(
-        TicketID => $Ticket{TicketID},
-        UserID   => 1,
-    );
+        # get ticket history
+        my @Lines = $Self->HistoryGet(
+            TicketID => $TicketID,
+            UserID   => 1,
+        );
 
-    HISTORYLINE:
-    for my $Data ( reverse @Lines ) {
-        next HISTORYLINE if $Data->{HistoryType} ne 'Merged';
-        if ( $Data->{Name} =~ /^.*\(\d+?\/(\d+?)\)$/ ) {
-            return $1;
+        HISTORYLINE:
+        for my $Data ( reverse @Lines ) {
+            next HISTORYLINE if $Data->{HistoryType} ne 'Merged';
+            if ( $Data->{Name} =~ /^.*\(\d+?\/(\d+?)\)$/ ) {
+                $TicketID = $1;
+                $Count++;
+                next MERGELOOP if ( $Count <= $Limit );
+
+                # returns no found Ticket after 10 deep-merges, so it should create a new one
+                return;
+            }
         }
-    }
 
-    return $TicketID;
+        return $TicketID;
+    }
 }
 
 =item TicketCreate()
@@ -263,7 +277,7 @@ or
         Lock          => 'unlock',
         Priority      => '3 normal',         # or PriorityID => 2,
         State         => 'new',              # or StateID => 5,
-        Type          => 'Incident',         # or TypeID => 1, not required
+        Type          => 'Incident',         # or TypeID = 1 or Ticket type default (Ticket::Type::Default), not required
         Service       => 'Service A',        # or ServiceID => 1, not required
         SLA           => 'SLA A',            # or SLAID => 1, not required
         CustomerID    => '123465',
@@ -303,12 +317,24 @@ sub TicketCreate {
 
     $Param{ResponsibleID} ||= 1;
 
-    if ( !$Param{TypeID} && !$Param{Type} ) {
-        $Param{TypeID} = 1;
-    }
-
     # get type object
     my $TypeObject = $Kernel::OM->Get('Kernel::System::Type');
+
+    if ( !$Param{TypeID} && !$Param{Type} ) {
+
+        # get default ticket type
+        my $DefaultTicketType = $Kernel::OM->Get('Kernel::Config')->Get('Ticket::Type::Default');
+
+        # check if default ticket type exists
+        my %AllTicketTypes = reverse $TypeObject->TypeList();
+
+        if ( $AllTicketTypes{$DefaultTicketType} ) {
+            $Param{Type} = $DefaultTicketType;
+        }
+        else {
+            $Param{TypeID} = 1;
+        }
+    }
 
     # TypeID/Type lookup!
     if ( !$Param{TypeID} && $Param{Type} ) {
@@ -1928,7 +1954,6 @@ sub TicketQueueSet {
                 TicketID              => $Param{TicketID},
                 CustomerMessageParams => {
                     Queue => $Queue,
-                    Body  => $Param{Comment} || '',
                 },
                 Recipients => \@UserIDs,
             },
@@ -2794,8 +2819,8 @@ sub TicketEscalationIndexBuild {
             # do not use locked tickets for calculation
             #last ROW if $Ticket{Lock} eq 'lock';
 
-            # do not use /int/ article types for calculation
-            next ROW if $Row->{ArticleType} =~ /int/i;
+            # do not use internal article types for calculation
+            next ROW if $Row->{ArticleType} =~ /-int/i;
 
             # only use 'agent' and 'customer' sender types for calculation
             next ROW if $Row->{SenderType} !~ /^(agent|customer)$/;
@@ -3903,21 +3928,25 @@ sub TicketLockSet {
     # send unlock notify
     if ( lc $Param{Lock} eq 'unlock' ) {
 
-        my @SkipRecipients;
-        if ( $Ticket{OwnerID} eq $Param{UserID} ) {
-            @SkipRecipients = [ $Param{UserID} ];
-        }
+        my $Notification = defined $Param{Notification} ? $Param{Notification} : 1;
+        if ( !$Param{SendNoNotification} && $Notification )
+        {
+            my @SkipRecipients;
+            if ( $Ticket{OwnerID} eq $Param{UserID} ) {
+                @SkipRecipients = [ $Param{UserID} ];
+            }
 
-        # trigger notification event
-        $Self->EventHandler(
-            Event          => 'NotificationLockTimeout',
-            SkipRecipients => \@SkipRecipients,
-            Data           => {
-                TicketID              => $Param{TicketID},
-                CustomerMessageParams => {},
-            },
-            UserID => $Param{UserID},
-        );
+            # trigger notification event
+            $Self->EventHandler(
+                Event          => 'NotificationLockTimeout',
+                SkipRecipients => \@SkipRecipients,
+                Data           => {
+                    TicketID              => $Param{TicketID},
+                    CustomerMessageParams => {},
+                },
+                UserID => $Param{UserID},
+            );
+        }
     }
 
     # trigger event
@@ -6015,9 +6044,24 @@ sub TicketMerge {
         UserID       => $Param{UserID},
     );
 
+    # get the list of all merged states
+    my @MergeStateList = $Kernel::OM->Get('Kernel::System::State')->StateGetStatesByType(
+        StateType => ['merged'],
+        Result    => 'Name',
+    );
+
+    # error handling
+    if ( !@MergeStateList ) {
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'error',
+            Message  => "No merge state found! Please add a valid merge state.",
+        );
+        return;
+    }
+
     # set new state of merge ticket
-    $Self->StateSet(
-        State    => 'merged',
+    $Self->TicketStateSet(
+        State    => $MergeStateList[0],
         TicketID => $Param{MergeTicketID},
         UserID   => $Param{UserID},
     );

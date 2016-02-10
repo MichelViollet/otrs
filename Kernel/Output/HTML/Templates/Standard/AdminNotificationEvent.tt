@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -102,7 +102,7 @@
 [% RenderBlockEnd("NoDataFoundMsg") %]
 [% RenderBlockStart("OverviewResultRow") %]
                         <tr [% IF Data.ValidID != 1%]class="Invalid"[% END %]>
-                            <td><a href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=Change;ID=[% Data.ID | uri %]">[% Data.Name | html %]</a></td>
+                            <td><a href="[% Env("Baselink") %]Action=[% Env("Action") %];Subaction=Change;ID=[% Data.ID | uri %]">[% Translate(Data.Name) | html %]</a></td>
                             <td title="[% Data.Comment | html %]">[% Data.Comment | truncate(26) | html %]</td>
                             <td>[% Translate(Data.Valid) | html %]</td>
                             <td>[% Data.ChangeTime | Localize("TimeShort") %]</td>
@@ -182,7 +182,7 @@ $('.NotificationDelete').bind('click', function (Event) {
 
                         <label for="VisibleForAgent">[% Translate("Show in agent preferences") | html %]: </label>
                         <div class="Field">
-                            <input type="checkbox" name="VisibleForAgent" id="VisibleForAgent" value="1" [% Data.VisibleForAgentChecked %] />
+                            [% Data.VisibleForAgentStrg %]
                         </div>
                         <div class="Clear"></div>
 
@@ -335,7 +335,7 @@ $('.NotificationDelete').bind('click', function (Event) {
                         <label for="ArticleTypeID">[% Translate("Article type") | html %]: </label>
                         <div class="Field">
                             [% Data.ArticleTypesStrg %]
-                            <p class="FieldExplanation">([% Translate("Only for ArticleCreate and ArticleSend event") | html %])</p>
+                            <p class="FieldExplanation">[% Translate("Only for ArticleCreate and ArticleSend event") | html %]</p>
                             <div id="ArticleTypeIDServerError" class="TooltipErrorMessage">
                                 <p>[% Translate("If ArticleCreate or ArticleSend is used as a trigger event, you need to specify an article filter as well. Please select at least one of the article filter fields.") | html %]</p>
                             </div>
@@ -345,7 +345,7 @@ $('.NotificationDelete').bind('click', function (Event) {
                         <label for="ArticleSenderTypeID">[% Translate("Article sender type") | html %]: </label>
                         <div class="Field">
                             [% Data.ArticleSenderTypesStrg %]
-                            <p class="FieldExplanation">([% Translate("Only for ArticleCreate and ArticleSend event") | html %])</p>
+                            <p class="FieldExplanation">[% Translate("Only for ArticleCreate and ArticleSend event") | html %]</p>
                             <div id="ArticleSenderTypeIDServerError" class="TooltipErrorMessage">
                                 <p>[% Translate("If ArticleCreate or ArticleSend is used as a trigger event, you need to specify an article filter as well. Please select at least one of the article filter fields.") | html %]</p>
                             </div>
@@ -355,7 +355,7 @@ $('.NotificationDelete').bind('click', function (Event) {
                         <label for="ArticleSubjectMatch">[% Translate("Subject match") | html %]: </label>
                         <div class="Field">
                             <input type="text" name="ArticleSubjectMatch" id="ArticleSubjectMatch" class="W75pc [% Data.ArticleSubjectMatchServerError %]" value="[% Data.ArticleSubjectMatch | html %]"/>
-                            <p class="FieldExplanation">([% Translate("Only for ArticleCreate and ArticleSend event") | html %])</p>
+                            <p class="FieldExplanation">[% Translate("Only for ArticleCreate and ArticleSend event") | html %]</p>
                             <div id="ArticleSubjectMatchServerError" class="TooltipErrorMessage">
                                 <p>[% Translate("If ArticleCreate or ArticleSend is used as a trigger event, you need to specify an article filter as well. Please select at least one of the article filter fields.") | html %]</p>
                             </div>
@@ -367,7 +367,7 @@ $('.NotificationDelete').bind('click', function (Event) {
                         </label>
                         <div class="Field">
                             <input type="text" name="ArticleBodyMatch" id="ArticleBodyMatch" class="W75pc [% Data.ArticleBodyMatchServerError %]" value="[% Data.ArticleBodyMatch | html %]"/>
-                            <p class="FieldExplanation">([% Translate("Only for ArticleCreate and ArticleSend event") | html %])</p>
+                            <p class="FieldExplanation">[% Translate("Only for ArticleCreate and ArticleSend event") | html %]</p>
                             <div id="ArticleBodyMatchServerError" class="TooltipErrorMessage">
                                 <p>[% Translate("If ArticleCreate or ArticleSend is used as a trigger event, you need to specify an article filter as well. Please select at least one of the article filter fields.") | html %]</p>
                             </div>
@@ -377,7 +377,7 @@ $('.NotificationDelete').bind('click', function (Event) {
                         <label for="ArticleAttachmentInclude">[% Translate("Include attachments to notification") | html %]: </label>
                         <div class="Field">
                             [% Data.ArticleAttachmentIncludeStrg %]
-                            <p class="FieldExplanation">([% Translate("Only for ArticleCreate and ArticleSend event") | html %])</p>
+                            <p class="FieldExplanation">[% Translate("Only for ArticleCreate and ArticleSend event") | html %]</p>
                         </div>
                         <div class="Clear"></div>
 
@@ -749,13 +749,13 @@ Core.Agent.Admin.NotificationEvent.Init({
 
                     <dt><code>&lt;OTRS_OWNER_*&gt;</code> [% Translate("or") | html %] <code>&lt;OTRS_TICKET_OWNER_*&gt;</code></dt>
                     <dd>
-                        [% Translate("Attibutes of the current ticket owner's user data") | html %]
+                        [% Translate("Attributes of the current ticket owner user data") | html %]
                         ([% Translate(" e. g.") | html %] <code>&lt;OTRS_OWNER_UserFirstname&gt;</code> [% Translate("or") | html %] <code>&lt;OTRS_TICKET_OWNER_UserFirstname&gt;</code>).
                     </dd>
 
                     <dt><code>&lt;OTRS_RESPONSIBLE_*&gt;</code> [% Translate("or") | html %] <code>&lt;OTRS_TICKET_RESPONSIBLE_*&gt;</code></dt>
                     <dd>
-                        [% Translate("Attibutes of the current ticket responsible's user data") | html %]
+                        [% Translate("Attributes of the current ticket responsible user data") | html %]
                         ([% Translate(" e. g.") | html %] <code>&lt;OTRS_RESPONSIBLE_UserFirstname&gt;</code> [% Translate("or") | html %] <code>&lt;OTRS_TICKET_RESPONSIBLE_UserFirstname&gt;</code>).
                     </dd>
 

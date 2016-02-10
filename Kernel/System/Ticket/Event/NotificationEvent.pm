@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -140,8 +140,18 @@ sub Run {
 
             # add attachments to notification
             if ( $Notification{Data}->{ArticleAttachmentInclude}->[0] ) {
+
+                # get article, it is needed for the correct behavior of the
+                # StripPlainBodyAsAttachment flag into the ArticleAttachmentIndex function
+                my %Article = $Kernel::OM->Get('Kernel::System::Ticket')->ArticleGet(
+                    ArticleID     => $Param{Data}->{ArticleID},
+                    UserID        => $Param{UserID},
+                    DynamicFields => 0,
+                );
+
                 my %Index = $TicketObject->ArticleAttachmentIndex(
                     ArticleID                  => $Param{Data}->{ArticleID},
+                    Article                    => \%Article,
                     UserID                     => $Param{UserID},
                     StripPlainBodyAsAttachment => 3,
                 );
@@ -1024,27 +1034,30 @@ sub _ArticleToUpdate {
     my $DBObject   = $Kernel::OM->Get('Kernel::System::DB');
     my $UserObject = $Kernel::OM->Get('Kernel::System::User');
 
-    if ( $Param{ArticleType} =~ /^note\-/ && $Param{UserID} ne 1 ) {
-        my $NewTo = $Param{To} || '';
-        for my $UserID ( sort keys %{ $Param{UserIDs} } ) {
-            my %UserData = $UserObject->GetUserData(
-                UserID => $UserID,
-                Valid  => 1,
-            );
-            if ($NewTo) {
-                $NewTo .= ', ';
-            }
-            $NewTo .= "$UserData{UserFirstname} $UserData{UserLastname} <$UserData{UserEmail}>";
-        }
+    # not update if its not a note article
+    return 1 if $Param{ArticleType} !~ /^note\-/;
 
+    my $NewTo = $Param{To} || '';
+    for my $UserID ( sort keys %{ $Param{UserIDs} } ) {
+        my %UserData = $UserObject->GetUserData(
+            UserID => $UserID,
+            Valid  => 1,
+        );
         if ($NewTo) {
-            $DBObject->Do(
-                SQL  => 'UPDATE article SET a_to = ? WHERE id = ?',
-                Bind => [ \$NewTo, \$Param{ArticleID} ],
-            );
+            $NewTo .= ', ';
         }
+        $NewTo .= "$UserData{UserFirstname} $UserData{UserLastname} <$UserData{UserEmail}>";
     }
 
+    # not update if To is the same
+    return 1 if !$NewTo;
+
+    return if !$DBObject->Do(
+        SQL  => 'UPDATE article SET a_to = ? WHERE id = ?',
+        Bind => [ \$NewTo, \$Param{ArticleID} ],
+    );
+
+    return 1;
 }
 
 1;

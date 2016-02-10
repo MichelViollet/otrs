@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -50,9 +50,9 @@ $Selenium->RunTest(
         );
 
         # create service for test
-        my $SrviceName = 'Service' . $Helper->GetRandomID();
-        my $ServiceID  = $Kernel::OM->Get('Kernel::System::Service')->ServiceAdd(
-            Name    => $SrviceName,
+        my $ServiceName = 'Service' . $Helper->GetRandomID();
+        my $ServiceID   = $Kernel::OM->Get('Kernel::System::Service')->ServiceAdd(
+            Name    => $ServiceName,
             ValidID => 1,
             Comment => 'Selenium Test',
             UserID  => $TestUserID,
@@ -65,17 +65,11 @@ $Selenium->RunTest(
         my $ScriptAlias = $Kernel::OM->Get('Kernel::Config')->Get('ScriptAlias');
 
         # go to agent preferences
-        $Selenium->get("${ScriptAlias}index.pl?Action=AgentPreferences");
-
-        # wait until form has loaded, if neccessary
-        $Selenium->WaitFor( JavaScript => 'return typeof($) === "function" && $("body").length' );
+        $Selenium->VerifiedGet("${ScriptAlias}index.pl?Action=AgentPreferences");
 
         # add test service to 'My Services' preference
         $Selenium->execute_script("\$('#ServiceID').val('$ServiceID').trigger('redraw.InputField').trigger('change');");
-        $Selenium->find_element( "#ServiceIDUpdate", 'css' )->click();
-
-        # wait until form has loaded, if neccessary
-        $Selenium->WaitFor( JavaScript => 'return typeof($) === "function" && $("body").length' );
+        $Selenium->find_element( "#ServiceIDUpdate", 'css' )->VerifiedClick();
 
         # check for update preference message on screen
         my $UpdateMessage = "Preferences updated successfully!";

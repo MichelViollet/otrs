@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -250,13 +250,6 @@ my @UTF8Tests = (
     },
     {
 
-        # decomposed UTF8 char (german umlaut a)
-        InsertData => Encode::encode( 'UTF8', "\x{61}\x{308}" ),
-        SelectData => Encode::encode( 'UTF8', "\x{E4}" ),
-        ResultData => undef,
-    },
-    {
-
         # composed UTF8 char (lowercase a with grave)
         InsertData => Encode::encode( 'UTF8', "\x{E0}" ),
         SelectData => Encode::encode( 'UTF8', "\x{E0}" ),
@@ -268,13 +261,6 @@ my @UTF8Tests = (
         InsertData => Encode::encode( 'UTF8', "\x{61}\x{300}" ),
         SelectData => Encode::encode( 'UTF8', "\x{61}\x{300}" ),
         ResultData => "\x{61}\x{300}",
-    },
-    {
-
-        # decomposed UTF8 char (lowercase a with grave)
-        InsertData => Encode::encode( 'UTF8', "\x{61}\x{300}" ),
-        SelectData => Encode::encode( 'UTF8', "\x{E0}" ),
-        ResultData => undef,
     },
 );
 

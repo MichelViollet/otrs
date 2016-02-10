@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -17,8 +17,18 @@ use vars (qw($Self));
 # get config object
 my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
-# use Test email backend
 my $Success = $ConfigObject->Set(
+    Key   => 'Frontend::RichText',
+    Value => 1,
+);
+
+$Self->True(
+    $Success,
+    "Enable RichText",
+);
+
+# use Test email backend
+$Success = $ConfigObject->Set(
     Key   => 'SendmailModule',
     Value => 'Kernel::System::Email::Test',
 );
@@ -330,8 +340,8 @@ for my $Test (@Tests) {
 
         my $Counter = 0;
         my %Result;
-
         for my $Header ( split '\n', ${ $Email->{Body} } ) {
+
             if ( $Header =~ /^Content\-Type\:\ (.*?)\;.*?\"(.*?)\"/x ) {
                 $Result{$Counter} = ( split ': ', $Header )[1];
                 $Counter++;

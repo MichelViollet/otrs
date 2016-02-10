@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -18,6 +18,14 @@ my $QueueObject        = $Kernel::OM->Get('Kernel::System::Queue');
 my $AutoResponseObject = $Kernel::OM->Get('Kernel::System::AutoResponse');
 my $TicketObject       = $Kernel::OM->Get('Kernel::System::Ticket');
 my $TestEmailObject    = $Kernel::OM->Get('Kernel::System::Email::Test');
+
+# get helper object
+$Kernel::OM->ObjectParamAdd(
+    'Kernel::System::UnitTest::Helper' => {
+        RestoreDatabase => 1,
+    },
+);
+my $Helper = $Kernel::OM->Get('Kernel::System::UnitTest::Helper');
 
 # use test email backend
 my $Success = $ConfigObject->Set(
@@ -91,7 +99,7 @@ for my $Test (@Tests) {
     );
 
     # create test queue
-    my $QueueName = 'Queue' . int( rand(1000000) );
+    my $QueueName = 'Queue' . $Helper->GetRandomID();
     my $QueueID   = $QueueObject->QueueAdd(
         Name            => $QueueName,
         ValidID         => 1,
@@ -110,7 +118,7 @@ for my $Test (@Tests) {
     push @QueueIDs, $QueueID;
 
     # create test auto-response
-    my $AutoResponseName = 'AutoResponse' . int( rand(1000000) );
+    my $AutoResponseName = 'AutoResponse' . $Helper->GetRandomID();
     my $AutoResponseID   = $AutoResponseObject->AutoResponseAdd(
         Name        => $AutoResponseName,
         ValidID     => 1,
@@ -171,10 +179,8 @@ for my $Test (@Tests) {
         HistoryComment   => 'Some free text!',
         UserID           => 1,
         UnlockOnAway     => 1,
-        AutoResponseType => ( $ConfigObject->Get('AutoResponseForWebTickets') )
-        ? $Test->{AutoResponseType}
-        : '',
-        OrigHeader => {
+        AutoResponseType => $Test->{AutoResponseType},
+        OrigHeader       => {
             From    => '"test" <test@localunittest.com>',
             To      => $QueueName,
             Subject => 'UnitTest article one',
@@ -260,10 +266,8 @@ for my $Test (@Tests) {
         HistoryComment   => 'Some free text!',
         UserID           => 1,
         UnlockOnAway     => 1,
-        AutoResponseType => ( $ConfigObject->Get('AutoResponseForWebTickets') )
-        ? $Test->{AutoResponseType}
-        : '',
-        OrigHeader => {
+        AutoResponseType => $Test->{AutoResponseType},
+        OrigHeader       => {
             From    => '"test" <test@localunittest.com>',
             To      => $QueueName,
             Subject => 'UnitTest article two',
@@ -286,77 +290,6 @@ for my $Test (@Tests) {
     $Count++;
 }
 
-# clean up test data
-# delete test tickets
-for my $Ticket (@TicketIDs) {
-    $Success = $TicketObject->TicketDelete(
-        TicketID => $Ticket,
-        UserID   => 1,
-    );
-    $Self->True(
-        $Success,
-        "TicketDelete() - TicketID $Ticket",
-    );
-}
-
-# get DB object
-my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
-
-# delete ticket loop-protection
-my $SendTo = $DBObject->Quote('test@localunittest.com');
-$Success = $DBObject->Do(
-    SQL  => 'DELETE FROM ticket_loop_protection WHERE sent_to = ?',
-    Bind => [ \$SendTo ],
-);
-$Self->True(
-    $Success,
-    "Ticket_loop_protection for $SendTo - deleted",
-);
-
-# delete auto-response queue relation
-for my $AutoResponseQueue (@QueueIDs) {
-    $Success = $DBObject->Do(
-        SQL => "DELETE FROM queue_auto_response WHERE queue_id = $AutoResponseQueue",
-    );
-    $Self->True(
-        $Success,
-        "AutoResponseQueue for QueueID $AutoResponseQueue relation - deleted",
-    );
-}
-
-# delete test auto-response
-for my $AutoResponse (@AutoResponseIDs) {
-    $Success = $DBObject->Do(
-        SQL => "DELETE FROM auto_response WHERE id = $AutoResponse",
-    );
-    $Self->True(
-        $Success,
-        "AutoResponseID $AutoResponse - deleted",
-    );
-}
-
-# delete test queue
-for my $Queue (@QueueIDs) {
-    $Success = $DBObject->Do(
-        SQL => "DELETE FROM queue WHERE id = $Queue",
-    );
-    $Self->True(
-        $Success,
-        "QueueID $Queue - deleted",
-    );
-}
-
-# get cache object
-my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
-
-# make sure the caches are correct
-for my $Cache (
-    qw (Ticket Queue AutoResponse QueueAutoResponse)
-    )
-{
-    $CacheObject->CleanUp(
-        Type => $Cache,
-    );
-}
+# cleanup is done by RestoreDatabase
 
 1;

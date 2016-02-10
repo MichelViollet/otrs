@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -88,7 +88,13 @@ sub new {
     $Kernel::OM->Get('Kernel::System::Main')->RequireBaseClass('Selenium::Remote::Driver')
         || die "Could not load Selenium::Remote::Driver";
 
-    my $Self = $Class->SUPER::new(%SeleniumTestsConfig);
+    $Kernel::OM->Get('Kernel::System::Main')->Require('Kernel::System::UnitTest::Selenium::WebElement')
+        || die "Could not load Kernel::System::UnitTest::Selenium::WebElement";
+
+    my $Self = $Class->SUPER::new(
+        webelement_class => 'Kernel::System::UnitTest::Selenium::WebElement',
+        %SeleniumTestsConfig
+    );
     $Self->{UnitTestObject}      = $Param{UnitTestObject};
     $Self->{SeleniumTestsActive} = 1;
 
@@ -181,6 +187,10 @@ sub _execute_command {    ## no critic
 
 Override get method of base class to prepend the correct base URL.
 
+    $SeleniumObject->get(
+        $URL,
+    );
+
 =cut
 
 sub get {    ## no critic
@@ -191,6 +201,52 @@ sub get {    ## no critic
     }
 
     $Self->SUPER::get($URL);
+
+    return;
+}
+
+=item VerifiedGet()
+
+perform a get() call, but wait for the page to be fully loaded (works only within OTRS).
+Will die() if the verification fails.
+
+    $SeleniumObject->VerifiedGet(
+        $URL,
+    );
+
+=cut
+
+sub VerifiedGet {
+    my ( $Self, $URL ) = @_;
+
+    $Self->get($URL);
+
+    $Self->WaitFor(
+        JavaScript =>
+            'return typeof(Core) == "object" && typeof(Core.Config) == "object" && Core.Config.Get("Baselink")'
+    ) || die "OTRS API verification failed after page load.";
+
+    return;
+}
+
+=item VerifiedRefresh()
+
+perform a refresh() call, but wait for the page to be fully loaded (works only within OTRS).
+Will die() if the verification fails.
+
+    $SeleniumObject->VerifiedRefresh();
+
+=cut
+
+sub VerifiedRefresh {
+    my ( $Self, $URL ) = @_;
+
+    $Self->refresh();
+
+    $Self->WaitFor(
+        JavaScript =>
+            'return typeof(Core) == "object" && typeof(Core.Config) == "object" && Core.Config.Get("Baselink")'
+    ) || die "OTRS API verification failed after page load.";
 
     return;
 }
@@ -224,8 +280,6 @@ sub Login {
     $Self->{UnitTestObject}->True( 1, 'Initiating login...' );
 
     eval {
-        $Self->delete_all_cookies();
-
         my $ScriptAlias = $Kernel::OM->Get('Kernel::Config')->Get('ScriptAlias');
 
         if ( $Param{Type} eq 'Agent' ) {
@@ -240,26 +294,16 @@ sub Login {
         $Self->delete_all_cookies();
 
         # Now load it again to login
-        $Self->get("${ScriptAlias}");
+        $Self->VerifiedGet("${ScriptAlias}");
 
-        my $Element = $Self->find_element( 'input#User', 'css' );
-        $Element->is_displayed();
-        $Element->is_enabled();
-        $Element->send_keys( $Param{User} );
-
-        $Element = $Self->find_element( 'input#Password', 'css' );
-        $Element->is_displayed();
-        $Element->is_enabled();
-        $Element->send_keys( $Param{Password} );
+        $Self->find_element( 'input#User', 'css' )->send_keys( $Param{User} );
+        $Self->find_element( 'input#Password', 'css' )->send_keys( $Param{Password} );
 
         # login
-        $Element->submit();
+        $Self->find_element( 'input#User', 'css' )->VerifiedSubmit();
 
-        # Wait until form has loaded, if neccessary
-        $Self->WaitFor( JavaScript => 'return typeof($) === "function" && $("a#LogoutButton").length' );
-
-        # login succressful?
-        $Element = $Self->find_element( 'a#LogoutButton', 'css' );
+        # login successful?
+        $Self->find_element( 'a#LogoutButton', 'css' ); # dies if not found
 
         $Self->{UnitTestObject}->True( 1, 'Login sequence ended...' );
     };
@@ -276,7 +320,7 @@ sub Login {
 wait with increasing sleep intervals until the given condition is true or the wait time is over.
 Exactly one condition (JavaScript or WindowCount) must be specified.
 
-    $SeleniumObject->WaitFor(
+    my $Success = $SeleniumObject->WaitFor(
         JavaScript  => 'return $(".someclass").length',   # Javascript code that checks condition
         WindowCount => 2,                                 # Wait until this many windows are open
         Time        => 20,                                # optional, wait time in seconds (default 20)
@@ -295,12 +339,12 @@ sub WaitFor {
     my $WaitedSeconds = 0;
     my $Interval      = 0.1;
 
-    while ( $WaitedSeconds < $Param{Time} ) {
+    while ( $WaitedSeconds <= $Param{Time} ) {
         if ( $Param{JavaScript} ) {
-            return if $Self->execute_script( $Param{JavaScript} )
+            return 1 if $Self->execute_script( $Param{JavaScript} )
         }
         elsif ( $Param{WindowCount} ) {
-            return if scalar( @{ $Self->get_window_handles() } ) == $Param{WindowCount};
+            return 1 if scalar( @{ $Self->get_window_handles() } ) == $Param{WindowCount};
         }
         sleep $Interval;
         $WaitedSeconds += $Interval;

@@ -1,5 +1,5 @@
 // --
-// Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+// Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 // --
 // This software comes with ABSOLUTELY NO WARRANTY. For details, see
 // the enclosed file COPYING for license information (AGPL). If you
@@ -51,9 +51,8 @@ Core.Agent.Admin.NotificationEvent = (function (TargetNS) {
         function VisibleForAgentHandler() {
             var TooltipObject = $('#VisibleForAgentTooltip');
 
-            if ($('#VisibleForAgent').prop('checked')) {
+            if ($('#VisibleForAgent').val() > 0) {
                 TooltipObject.removeAttr('readonly');
-                TooltipObject.prop('value','');
 
                 // show default transport value
                 $('.AgentEnabledByDefault').show();
@@ -66,7 +65,7 @@ Core.Agent.Admin.NotificationEvent = (function (TargetNS) {
             }
         }
 
-        $('#VisibleForAgent').bind('click', VisibleForAgentHandler);
+        $('#VisibleForAgent').bind('change', VisibleForAgentHandler);
 
         // Run on first view.
         VisibleForAgentHandler();

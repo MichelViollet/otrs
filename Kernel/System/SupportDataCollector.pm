@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -65,6 +65,7 @@ collect system data
     my %Result = $SupportDataCollectorObject->Collect(
         UseCache   => 1,    # (optional) to get data from cache if any
         WebTimeout => 60,   # (optional)
+        Hostname   => 'my.test.host:8080' # (optional, for testing purposes)
     );
 
     returns in case of error
@@ -117,7 +118,7 @@ sub Collect {
     # Data must be collected in a web request context to be able to collect web server data.
     #   If called from CLI, make a web request to collect the data.
     if ( !$ENV{GATEWAY_INTERFACE} ) {
-        return $Self->CollectByWebRequest( WebTimeout => $Param{WebTimeout} );
+        return $Self->CollectByWebRequest( %Param );
     }
 
     # Look for all plug-ins in the FS
@@ -214,18 +215,22 @@ sub CollectByWebRequest {
         );
     }
 
-    my $Host;
-    my $FQDN = $Kernel::OM->Get('Kernel::Config')->Get('FQDN');
+    my $Host = $Param{Hostname};
 
-    if ( $FQDN ne 'yourhost.example.com' && gethostbyname($FQDN) ) {
-        $Host = $FQDN;
+    # Determine hostname
+    if (!$Host) {
+        my $FQDN = $Kernel::OM->Get('Kernel::Config')->Get('FQDN');
+
+        if ( $FQDN ne 'yourhost.example.com' && gethostbyname($FQDN) ) {
+            $Host = $FQDN;
+        }
+
+        if ( !$Host && gethostbyname('localhost') ) {
+            $Host = 'localhost';
+        }
+
+        $Host ||= '127.0.0.1';
     }
-
-    if ( !$Host && gethostbyname('localhost') ) {
-        $Host = 'localhost';
-    }
-
-    $Host ||= '127.0.0.1';
 
     # if the public interface is proteceted with .htaccess
     # we can specify the htaccess login data here,
@@ -252,11 +257,15 @@ sub CollectByWebRequest {
         Timeout => $Param{WebTimeout} || 20,
     );
 
+    # disable webuseragent proxy since the call is sent to self server, see bug#11680
+    $WebUserAgentObject->{Proxy} = '';
+
     # define result
     my %Result = (
         Success => 0,
     );
 
+    # skip the ssl verification, because this is only a internal web request
     my %Response = $WebUserAgentObject->Request(
         Type => 'POST',
         URL  => $URL,
@@ -264,6 +273,7 @@ sub CollectByWebRequest {
             Action         => 'PublicSupportDataCollector',
             ChallengeToken => $ChallengeToken,
         },
+        SkipSSLVerification => 1,
     );
 
     # test if the web response was successful
